@@ -12,8 +12,11 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Interpolation;
-import ru.mipt.bit.platformer.input.InputHandler;
-import ru.mipt.bit.platformer.input.MovementInputHandler;
+import ru.mipt.bit.platformer.input.*;
+import ru.mipt.bit.platformer.input.action.MoveDown;
+import ru.mipt.bit.platformer.input.action.MoveLeft;
+import ru.mipt.bit.platformer.input.action.MoveRight;
+import ru.mipt.bit.platformer.input.action.MoveUp;
 import ru.mipt.bit.platformer.model.EntityModel;
 import ru.mipt.bit.platformer.model.TankModel;
 import ru.mipt.bit.platformer.model.TreeModel;
@@ -23,6 +26,7 @@ import ru.mipt.bit.platformer.view.TreeView;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
@@ -40,57 +44,26 @@ public class GameDesktopLauncher implements ApplicationListener {
     private TankModel tankModel;
     private final List<EntityModel> entityModels = new ArrayList<>();
 
-    private final InputHandler inputHandler = new MovementInputHandler();
+    private InputHandler inputHandler;
 
     @Override
     public void create() {
         batch = new SpriteBatch();
 
-        // load level tiles
-        level = new TmxMapLoader().load("level.tmx");
-        levelRenderer = createSingleLayerMapRenderer(level, batch);
-        TiledMapTileLayer groundLayer = getSingleLayer(level);
-        tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
+        TiledMapTileLayer groundLayer = loadLevelTiles();
 
-        tankModel = new TankModel(
-                new GridPoint2(1, 1), 0f, groundLayer, MOVEMENT_SPEED,
-                new TankView("images/tank_blue.png")
-        );
+        loadEntities(groundLayer);
 
-        TreeModel treeModel = new TreeModel(
-                new GridPoint2(1, 3), 0f, groundLayer,
-                new TreeView("images/greenTree.png")
-        );
-
-        entityModels.add(treeModel);
-        entityModels.add(tankModel);
+        loadInputHandler();
     }
 
     @Override
     public void render() {
-        // clear the screen
-        Gdx.gl.glClearColor(0f, 0f, 0.2f, 1f);
-        Gdx.gl.glClear(GL_COLOR_BUFFER_BIT);
+        float deltaTime = getDeltaTimeAndRenderGdxColors();
 
-        // get time passed since the last render
-        float deltaTime = Gdx.graphics.getDeltaTime();
+        handleInputAndRenderIt(deltaTime);
 
-        inputHandler.handleInput(tankModel, entityModels);
-
-        // render each tile of the level
-        tankModel.update(tileMovement, deltaTime);
-        levelRenderer.render();
-
-        // start recording all drawing commands
-        batch.begin();
-
-        // render player and tree obstacle
-        for (EntityModel e: entityModels) {
-            e.getView().render(batch, e.getPosition(), e.getRotation(), e.getLayer());
-        }
-
-        // submit all drawing requests
-        batch.end();
+        recordDrawingCommands();
     }
 
     @Override
@@ -116,6 +89,68 @@ public class GameDesktopLauncher implements ApplicationListener {
         }
         level.dispose();
         batch.dispose();
+    }
+
+    private void loadInputHandler() {
+        InputProvider inputProvider = new GdxInputProvider();
+        Map<Integer, Action> actions = Map.of(
+                com.badlogic.gdx.Input.Keys.W, new MoveUp(),
+                com.badlogic.gdx.Input.Keys.S, new MoveDown(),
+                com.badlogic.gdx.Input.Keys.A, new MoveLeft(),
+                com.badlogic.gdx.Input.Keys.D, new MoveRight()
+        );
+
+        inputHandler = new InputHandlerImpl(inputProvider, actions);
+    }
+
+    private void loadEntities(TiledMapTileLayer groundLayer) {
+        tankModel = new TankModel(
+                new GridPoint2(1, 1), 0f, groundLayer, MOVEMENT_SPEED,
+                new TankView("images/tank_blue.png")
+        );
+
+        TreeModel treeModel = new TreeModel(
+                new GridPoint2(1, 3), 0f, groundLayer,
+                new TreeView("images/greenTree.png")
+        );
+
+        entityModels.add(treeModel);
+        entityModels.add(tankModel);
+    }
+
+    private TiledMapTileLayer loadLevelTiles() {
+        // load level tiles
+        level = new TmxMapLoader().load("level.tmx");
+        levelRenderer = createSingleLayerMapRenderer(level, batch);
+        TiledMapTileLayer groundLayer = getSingleLayer(level);
+        tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
+        return groundLayer;
+    }
+
+    private void handleInputAndRenderIt(float deltaTime) {
+        inputHandler.handleInput(tankModel, entityModels);
+        // render each tile of the level
+        tankModel.update(tileMovement, deltaTime);
+        levelRenderer.render();
+    }
+
+    private static float getDeltaTimeAndRenderGdxColors() {
+        // clear the screen
+        Gdx.gl.glClearColor(0f, 0f, 0.2f, 1f);
+        Gdx.gl.glClear(GL_COLOR_BUFFER_BIT);
+        // get time passed since the last render
+        return Gdx.graphics.getDeltaTime();
+    }
+
+    private void recordDrawingCommands() {
+        // start recording all drawing commands
+        batch.begin();
+        // render player and tree obstacle
+        for (EntityModel e: entityModels) {
+            e.getView().render(batch, e.getPosition(), e.getRotation(), e.getLayer());
+        }
+        // submit all drawing requests
+        batch.end();
     }
 
     public static void main(String[] args) {
