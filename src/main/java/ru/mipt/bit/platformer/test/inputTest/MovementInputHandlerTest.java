@@ -1,43 +1,49 @@
 package ru.mipt.bit.platformer.test.inputTest;
 
-import com.badlogic.gdx.Gdx;
-import com.badlogic.gdx.Input;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import ru.mipt.bit.platformer.enums.MovementDirection;
-import ru.mipt.bit.platformer.input.MovementInputHandler;
+import ru.mipt.bit.platformer.input.Action;
+import ru.mipt.bit.platformer.input.InputHandlerImpl;
+import ru.mipt.bit.platformer.input.InputProvider;
+import ru.mipt.bit.platformer.input.action.MoveDown;
+import ru.mipt.bit.platformer.input.action.MoveLeft;
+import ru.mipt.bit.platformer.input.action.MoveRight;
+import ru.mipt.bit.platformer.input.action.MoveUp;
 import ru.mipt.bit.platformer.model.EntityModel;
 import ru.mipt.bit.platformer.model.TankModel;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.Mockito.*;
 
 class MovementInputHandlerTest {
 
-    private MovementInputHandler handler;
+    private InputProvider inputProvider;
     private TankModel tank;
     private List<EntityModel> entities;
-    private Input originalInput;
+    private InputHandlerImpl handler;
 
     @BeforeEach
     void setUp() {
-        handler = new MovementInputHandler();
+        inputProvider = mock(InputProvider.class);
         tank = mock(TankModel.class);
         entities = List.of();
-        originalInput = Gdx.input;
-        Gdx.input = mock(Input.class);
-    }
 
-    @AfterEach
-    void tearDown() {
-        Gdx.input = originalInput;
+        Map<Integer, Action> actions = Map.of(
+                com.badlogic.gdx.Input.Keys.W, new MoveUp(),
+                com.badlogic.gdx.Input.Keys.S, new MoveDown(),
+                com.badlogic.gdx.Input.Keys.A, new MoveLeft(),
+                com.badlogic.gdx.Input.Keys.D, new MoveRight()
+        );
+
+        handler = new InputHandlerImpl(inputProvider, actions);
     }
 
     @Test
     void testHandleInputMoveUp() {
-        when(Gdx.input.isKeyPressed(Input.Keys.W)).thenReturn(true);
+        when(inputProvider.isKeyPressed(com.badlogic.gdx.Input.Keys.W)).thenReturn(true);
 
         handler.handleInput(tank, entities);
 
@@ -46,7 +52,7 @@ class MovementInputHandlerTest {
 
     @Test
     void testHandleInputMoveDown() {
-        when(Gdx.input.isKeyPressed(Input.Keys.S)).thenReturn(true);
+        when(inputProvider.isKeyPressed(com.badlogic.gdx.Input.Keys.S)).thenReturn(true);
 
         handler.handleInput(tank, entities);
 
@@ -55,7 +61,7 @@ class MovementInputHandlerTest {
 
     @Test
     void testHandleInputMoveLeft() {
-        when(Gdx.input.isKeyPressed(Input.Keys.A)).thenReturn(true);
+        when(inputProvider.isKeyPressed(com.badlogic.gdx.Input.Keys.A)).thenReturn(true);
 
         handler.handleInput(tank, entities);
 
@@ -64,7 +70,7 @@ class MovementInputHandlerTest {
 
     @Test
     void testHandleInputMoveRight() {
-        when(Gdx.input.isKeyPressed(Input.Keys.D)).thenReturn(true);
+        when(inputProvider.isKeyPressed(com.badlogic.gdx.Input.Keys.D)).thenReturn(true);
 
         handler.handleInput(tank, entities);
 
@@ -73,7 +79,7 @@ class MovementInputHandlerTest {
 
     @Test
     void testNoKeyPressedDoesNothing() {
-        when(Gdx.input.isKeyPressed(anyInt())).thenReturn(false);
+        when(inputProvider.isKeyPressed(anyInt())).thenReturn(false);
 
         handler.handleInput(tank, entities);
 
