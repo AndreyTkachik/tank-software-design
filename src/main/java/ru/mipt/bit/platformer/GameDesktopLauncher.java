@@ -10,20 +10,23 @@ import com.badlogic.gdx.maps.MapRenderer;
 import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
-import com.badlogic.gdx.math.GridPoint2;
 import com.badlogic.gdx.math.Interpolation;
 import ru.mipt.bit.platformer.input.*;
 import ru.mipt.bit.platformer.input.action.MoveDown;
 import ru.mipt.bit.platformer.input.action.MoveLeft;
 import ru.mipt.bit.platformer.input.action.MoveRight;
 import ru.mipt.bit.platformer.input.action.MoveUp;
+import ru.mipt.bit.platformer.level.FileLevelLoader;
+import ru.mipt.bit.platformer.level.LevelEntitiesData;
+import ru.mipt.bit.platformer.level.LevelLoader;
+import ru.mipt.bit.platformer.level.RandomLevelLoader;
 import ru.mipt.bit.platformer.model.EntityModel;
 import ru.mipt.bit.platformer.model.TankModel;
-import ru.mipt.bit.platformer.model.TreeModel;
 import ru.mipt.bit.platformer.util.TileMovement;
 import ru.mipt.bit.platformer.view.TankView;
 import ru.mipt.bit.platformer.view.TreeView;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +37,7 @@ import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
 public class GameDesktopLauncher implements ApplicationListener {
 
     private static final float MOVEMENT_SPEED = 0.4f;
+    private static final boolean RANDOM_LOADER_ENABLE = false;
 
     private Batch batch;
 
@@ -42,7 +46,7 @@ public class GameDesktopLauncher implements ApplicationListener {
     private TileMovement tileMovement;
 
     private TankModel tankModel;
-    private final List<EntityModel> entityModels = new ArrayList<>();
+    private List<EntityModel> entityModels = new ArrayList<>();
 
     private InputHandler inputHandler;
 
@@ -52,9 +56,9 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         TiledMapTileLayer groundLayer = loadLevelTiles();
 
-        loadEntities(groundLayer);
-
         loadInputHandler();
+
+        loadLevelEntities(groundLayer);
     }
 
     @Override
@@ -103,18 +107,16 @@ public class GameDesktopLauncher implements ApplicationListener {
         inputHandler = new InputHandlerImpl(inputProvider, actions);
     }
 
-    private void loadEntities(TiledMapTileLayer groundLayer) {
-        tankModel = new TankModel(
-                new GridPoint2(1, 1), 0f, groundLayer, MOVEMENT_SPEED,
-                new TankView("images/tank_blue.png")
-        );
+    private void loadLevelEntities(TiledMapTileLayer groundLayer) {
+        TankView tankView = new TankView("images/tank_blue.png");
+        TreeView treeView = new TreeView("images/greenTree.png");
 
-        TreeModel treeModel = new TreeModel(
-                new GridPoint2(1, 3), 0f, groundLayer,
-                new TreeView("images/greenTree.png")
-        );
+        LevelLoader loader = getLoader(groundLayer, tankView, treeView);
 
-        entityModels.add(treeModel);
+        LevelEntitiesData levelEntitiesData = loader.loadLevel();
+
+        tankModel = levelEntitiesData.getTank();
+        entityModels = new ArrayList<>(levelEntitiesData.getObstacles());
         entityModels.add(tankModel);
     }
 
@@ -125,6 +127,29 @@ public class GameDesktopLauncher implements ApplicationListener {
         TiledMapTileLayer groundLayer = getSingleLayer(level);
         tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
         return groundLayer;
+    }
+
+    private LevelLoader getLoader(TiledMapTileLayer groundLayer, TankView tankView, TreeView treeView) {
+        LevelLoader loader;
+
+        if (RANDOM_LOADER_ENABLE) {
+            loader = new RandomLevelLoader(
+                    10, 8, 10,
+                    MOVEMENT_SPEED,
+                    groundLayer,
+                    tankView,
+                    treeView
+            );
+        } else {
+            loader = new FileLevelLoader(
+                    Path.of("src/main/resources/levels/test_level"),
+                    MOVEMENT_SPEED,
+                    groundLayer,
+                    tankView,
+                    treeView
+            );
+        }
+        return loader;
     }
 
     private void handleInputAndRenderIt(float deltaTime) {
