@@ -22,6 +22,8 @@ class TankModelTest {
     @BeforeEach
     void setUp() {
         TiledMapTileLayer layer = mock(TiledMapTileLayer.class);
+        when(layer.getHeight()).thenReturn(50);
+        when(layer.getWidth()).thenReturn(50);
         EntityView view = mock(EntityView.class);
         tank = new TankModel(new GridPoint2(1, 1), 0f, layer, 1f, view);
     }
@@ -62,5 +64,30 @@ class TankModelTest {
         tank.update(movement, 10f);
 
         assertEquals(new GridPoint2(1, 2), tank.getPosition());
+    }
+
+    @Test
+    void testTankInitialHealthInRange() {
+        TiledMapTileLayer layer = mock(TiledMapTileLayer.class);
+        EntityView view = mock(EntityView.class);
+        TankModel tank = new TankModel(new GridPoint2(0, 0), 0f, layer, 1f, view);
+
+        int health = tank.getHealth();
+        assertTrue(health >= 80 && health <= 100);
+    }
+
+    @Test
+    void testTankCannotMoveIntoOccupiedCell() {
+        TiledMapTileLayer layer = mock(TiledMapTileLayer.class);
+        EntityView view = mock(EntityView.class);
+        TankModel tank = new TankModel(new GridPoint2(0, 0), 0f, layer, 1f, view);
+
+        EntityModel obstacle = mock(EntityModel.class);
+        when(obstacle.getPosition()).thenReturn(new GridPoint2(1, 0));
+
+        tank.move(MovementDirection.RIGHT, List.of(obstacle));
+
+        assertEquals(0, tank.getPlayerDestinationCoordinates().x);
+        assertEquals(0, tank.getPlayerDestinationCoordinates().y);
     }
 }

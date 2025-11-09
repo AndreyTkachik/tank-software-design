@@ -8,13 +8,15 @@ public abstract class EntityModel {
     protected final GridPoint2 position;
     protected float rotation;
     protected final TiledMapTileLayer layer;
-    protected final EntityView view;
+    protected EntityView view;
+    protected int health;
 
     public EntityModel(GridPoint2 position, float rotation, TiledMapTileLayer layer, EntityView view) {
         this.position = position;
         this.rotation = rotation;
         this.layer = layer;
         this.view = view;
+        this.health = 100;
     }
 
     public GridPoint2 getPosition() {
@@ -31,5 +33,11 @@ public abstract class EntityModel {
 
     public EntityView getView() {
         return view;
+    }
+
+    public void setView(EntityView view) { this.view = view;}
+
+    public int getHealth() {
+        return health;
     }
 }
