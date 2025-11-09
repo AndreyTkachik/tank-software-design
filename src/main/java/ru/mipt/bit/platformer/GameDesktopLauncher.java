@@ -12,10 +12,7 @@ import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.math.Interpolation;
 import ru.mipt.bit.platformer.input.*;
-import ru.mipt.bit.platformer.input.action.MoveDown;
-import ru.mipt.bit.platformer.input.action.MoveLeft;
-import ru.mipt.bit.platformer.input.action.MoveRight;
-import ru.mipt.bit.platformer.input.action.MoveUp;
+import ru.mipt.bit.platformer.input.action.*;
 import ru.mipt.bit.platformer.level.FileLevelLoader;
 import ru.mipt.bit.platformer.level.LevelEntitiesData;
 import ru.mipt.bit.platformer.level.LevelLoader;
@@ -37,7 +34,8 @@ import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
 public class GameDesktopLauncher implements ApplicationListener {
 
     private static final float MOVEMENT_SPEED = 0.4f;
-    private static final boolean RANDOM_LOADER_ENABLE = false;
+    private static final boolean RANDOM_LOADER_ENABLE = true;
+    private static final int AI_TANK_COUNT = 3;
 
     private Batch batch;
 
@@ -48,6 +46,9 @@ public class GameDesktopLauncher implements ApplicationListener {
     private TankModel tankModel;
     private List<EntityModel> entityModels = new ArrayList<>();
 
+    private List<TankModel> aiTanks = new ArrayList<>();
+    private final List<InputHandler> aiHandlers = new ArrayList<>();
+
     private InputHandler inputHandler;
 
     @Override
@@ -56,9 +57,11 @@ public class GameDesktopLauncher implements ApplicationListener {
 
         TiledMapTileLayer groundLayer = loadLevelTiles();
 
+        loadLevelEntities(groundLayer);
+
         loadInputHandler();
 
-        loadLevelEntities(groundLayer);
+        loadAIInputHandler();
     }
 
     @Override
@@ -101,10 +104,17 @@ public class GameDesktopLauncher implements ApplicationListener {
                 com.badlogic.gdx.Input.Keys.W, new MoveUp(),
                 com.badlogic.gdx.Input.Keys.S, new MoveDown(),
                 com.badlogic.gdx.Input.Keys.A, new MoveLeft(),
-                com.badlogic.gdx.Input.Keys.D, new MoveRight()
+                com.badlogic.gdx.Input.Keys.D, new MoveRight(),
+                com.badlogic.gdx.Input.Keys.L, new ActivateHealth()
         );
 
         inputHandler = new InputHandlerImpl(inputProvider, actions);
+    }
+
+    private void loadAIInputHandler() {
+        for (int i = 0; i < aiTanks.size(); i++) {
+            aiHandlers.add(new AIInputHandlerImpl());
+        }
     }
 
     private void loadLevelEntities(TiledMapTileLayer groundLayer) {
@@ -116,7 +126,8 @@ public class GameDesktopLauncher implements ApplicationListener {
         LevelEntitiesData levelEntitiesData = loader.loadLevel();
 
         tankModel = levelEntitiesData.getTank();
-        entityModels = new ArrayList<>(levelEntitiesData.getObstacles());
+        aiTanks = levelEntitiesData.getAiTanks();
+        entityModels = new ArrayList<>(levelEntitiesData.getAllEntities());
         entityModels.add(tankModel);
     }
 
@@ -135,6 +146,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         if (RANDOM_LOADER_ENABLE) {
             loader = new RandomLevelLoader(
                     10, 8, 10,
+                    AI_TANK_COUNT,
                     MOVEMENT_SPEED,
                     groundLayer,
                     tankView,
@@ -155,7 +167,11 @@ public class GameDesktopLauncher implements ApplicationListener {
     private void handleInputAndRenderIt(float deltaTime) {
         inputHandler.handleInput(tankModel, entityModels);
         // render each tile of the level
+        for (int i = 0; i < aiTanks.size(); i++) {
+            aiHandlers.get(i).handleInput(aiTanks.get(i), entityModels);
+        }
         tankModel.update(tileMovement, deltaTime);
+        aiTanks.forEach(tank -> tank.update(tileMovement, deltaTime));
         levelRenderer.render();
     }
 

@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class FileLevelLoader implements LevelLoader {
@@ -63,6 +64,6 @@ public class FileLevelLoader implements LevelLoader {
             }
         }
 
-        return new LevelEntitiesData(player, obstacles);
+        return new LevelEntitiesData(player, Collections.emptyList(), obstacles);
     }
 }
