@@ -17,6 +17,7 @@ import ru.mipt.bit.platformer.level.FileLevelLoader;
 import ru.mipt.bit.platformer.level.LevelEntitiesData;
 import ru.mipt.bit.platformer.level.LevelLoader;
 import ru.mipt.bit.platformer.level.RandomLevelLoader;
+import ru.mipt.bit.platformer.model.BulletModel;
 import ru.mipt.bit.platformer.model.EntityModel;
 import ru.mipt.bit.platformer.model.TankModel;
 import ru.mipt.bit.platformer.util.TileMovement;
@@ -34,14 +35,13 @@ import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
 public class GameDesktopLauncher implements ApplicationListener {
 
     private static final float MOVEMENT_SPEED = 0.4f;
-    private static final boolean RANDOM_LOADER_ENABLE = true;
+    private static final boolean RANDOM_LOADER_ENABLE = false;
     private static final int AI_TANK_COUNT = 3;
 
     private Batch batch;
 
     private TiledMap level;
     private MapRenderer levelRenderer;
-    private TileMovement tileMovement;
 
     private TankModel tankModel;
     private List<EntityModel> entityModels = new ArrayList<>();
@@ -105,7 +105,8 @@ public class GameDesktopLauncher implements ApplicationListener {
                 com.badlogic.gdx.Input.Keys.S, new MoveDown(),
                 com.badlogic.gdx.Input.Keys.A, new MoveLeft(),
                 com.badlogic.gdx.Input.Keys.D, new MoveRight(),
-                com.badlogic.gdx.Input.Keys.L, new ActivateHealth()
+                com.badlogic.gdx.Input.Keys.L, new ActivateHealth(),
+                com.badlogic.gdx.Input.Keys.SPACE, new Shoot(entityModels)
         );
 
         inputHandler = new InputHandlerImpl(inputProvider, actions);
@@ -135,9 +136,7 @@ public class GameDesktopLauncher implements ApplicationListener {
         // load level tiles
         level = new TmxMapLoader().load("level.tmx");
         levelRenderer = createSingleLayerMapRenderer(level, batch);
-        TiledMapTileLayer groundLayer = getSingleLayer(level);
-        tileMovement = new TileMovement(groundLayer, Interpolation.smooth);
-        return groundLayer;
+        return getSingleLayer(level);
     }
 
     private LevelLoader getLoader(TiledMapTileLayer groundLayer, TankView tankView, TreeView treeView) {
@@ -170,9 +169,25 @@ public class GameDesktopLauncher implements ApplicationListener {
         for (int i = 0; i < aiTanks.size(); i++) {
             aiHandlers.get(i).handleInput(aiTanks.get(i), entityModels);
         }
-        tankModel.update(tileMovement, deltaTime);
-        aiTanks.forEach(tank -> tank.update(tileMovement, deltaTime));
+        tankModel.update(new TileMovement(getSingleLayer(level), Interpolation.smooth), deltaTime);
+        aiTanks.forEach(tank -> tank.update(new TileMovement(getSingleLayer(level), Interpolation.smooth), deltaTime));
+        updateBulletState();
         levelRenderer.render();
+    }
+
+    private void updateBulletState() {
+        List<EntityModel> copy = new ArrayList<>(entityModels);
+        do {
+            for (EntityModel e : entityModels) {
+                if (e instanceof BulletModel) {
+                    ((BulletModel) e).update(entityModels);
+                }
+                if (!entityModels.equals(copy)) {
+                    copy = new ArrayList<>(entityModels);
+                    break;
+                }
+            }
+        } while (!entityModels.equals(copy));
     }
 
     private static float getDeltaTimeAndRenderGdxColors() {

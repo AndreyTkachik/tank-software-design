@@ -15,7 +15,12 @@ public class MoveAIRandom implements Action {
     @Override
     public void execute(TankModel tank, List<EntityModel> entities) {
         MovementDirection[] directions = MovementDirection.values();
-        MovementDirection randomDirection = directions[random.nextInt(directions.length)];
-        tank.move(randomDirection, entities);
+        int choice = random.nextInt(directions.length + 1);
+        if (choice < directions.length) {
+            tank.move(directions[choice], entities);
+        } else {
+            new Shoot(entities).execute(tank, entities);
+        }
+
     }
 }
