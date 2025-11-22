@@ -18,28 +18,18 @@ public class RandomLevelLoader implements LevelLoader {
     private final int obstacleCount;
     private final int aiTankCount;
     private final float tankSpeed;
-    private final TiledMapTileLayer layer;
-    private final EntityView tankView;
-    private final EntityView treeView;
 
-    public RandomLevelLoader(int width, int height, int obstacleCount,
-                             int aiTankCount, float tankSpeed,
-                             TiledMapTileLayer layer, EntityView tankView,
-                             EntityView treeView) {
+    public RandomLevelLoader(int width, int height, int obstacleCount, int aiTankCount, float tankSpeed) {
         this.width = width;
         this.height = height;
         this.obstacleCount = obstacleCount;
         this.aiTankCount = aiTankCount;
         this.tankSpeed = tankSpeed;
-        this.layer = layer;
-        this.tankView = tankView;
-        this.treeView = treeView;
     }
 
     @Override
-    public LevelEntitiesData loadLevel() {
+    public LevelEntitiesData loadLevel(TiledMapTileLayer layer, EntityView tankView, EntityView treeView) {
         Random random = new Random();
-
         GridPoint2 playerPos = new GridPoint2(random.nextInt(width), random.nextInt(height));
         TankModel tank = new TankModel(playerPos, 0f, layer, tankSpeed, tankView);
 

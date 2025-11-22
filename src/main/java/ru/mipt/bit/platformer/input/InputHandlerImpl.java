@@ -1,11 +1,13 @@
 package ru.mipt.bit.platformer.input;
 
+import org.springframework.stereotype.Component;
 import ru.mipt.bit.platformer.model.EntityModel;
 import ru.mipt.bit.platformer.model.TankModel;
 
 import java.util.List;
 import java.util.Map;
 
+@Component("inputHandler")
 public class InputHandlerImpl implements InputHandler {
     private final InputProvider inputProvider;
     private final Map<Integer, Action> actions;

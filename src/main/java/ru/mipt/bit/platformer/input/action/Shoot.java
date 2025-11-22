@@ -1,6 +1,7 @@
 package ru.mipt.bit.platformer.input.action;
 
 import com.badlogic.gdx.math.GridPoint2;
+import org.springframework.stereotype.Component;
 import ru.mipt.bit.platformer.input.Action;
 import ru.mipt.bit.platformer.model.BulletModel;
 import ru.mipt.bit.platformer.model.EntityModel;
@@ -8,15 +9,11 @@ import ru.mipt.bit.platformer.model.TankModel;
 
 import java.util.List;
 
+@Component
 public class Shoot implements Action {
-    private final List<EntityModel> entities;
-
-    public Shoot(List<EntityModel> entities) {
-        this.entities = entities;
-    }
 
     @Override
-    public void execute(TankModel tank, List<EntityModel> unused) {
+    public void execute(TankModel tank, List<EntityModel> entities) {
         GridPoint2 bulletPos = new GridPoint2(
                 tank.getPosition().x + tankDirectionOffsetX(tank),
                 tank.getPosition().y + tankDirectionOffsetY(tank)

@@ -11,12 +11,12 @@ import com.badlogic.gdx.maps.tiled.TiledMap;
 import com.badlogic.gdx.maps.tiled.TiledMapTileLayer;
 import com.badlogic.gdx.maps.tiled.TmxMapLoader;
 import com.badlogic.gdx.math.Interpolation;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import ru.mipt.bit.platformer.config.AppConfig;
 import ru.mipt.bit.platformer.input.*;
 import ru.mipt.bit.platformer.input.action.*;
-import ru.mipt.bit.platformer.level.FileLevelLoader;
 import ru.mipt.bit.platformer.level.LevelEntitiesData;
 import ru.mipt.bit.platformer.level.LevelLoader;
-import ru.mipt.bit.platformer.level.RandomLevelLoader;
 import ru.mipt.bit.platformer.model.BulletModel;
 import ru.mipt.bit.platformer.model.EntityModel;
 import ru.mipt.bit.platformer.model.TankModel;
@@ -24,20 +24,14 @@ import ru.mipt.bit.platformer.util.TileMovement;
 import ru.mipt.bit.platformer.view.TankView;
 import ru.mipt.bit.platformer.view.TreeView;
 
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 
 import static com.badlogic.gdx.graphics.GL20.GL_COLOR_BUFFER_BIT;
 import static ru.mipt.bit.platformer.util.GdxGameUtils.*;
 
 public class GameDesktopLauncher implements ApplicationListener {
-
-    private static final float MOVEMENT_SPEED = 0.4f;
-    private static final boolean RANDOM_LOADER_ENABLE = false;
-    private static final int AI_TANK_COUNT = 3;
-
+    private static final String LOADER_PROFILE = "random";
     private Batch batch;
 
     private TiledMap level;
@@ -51,9 +45,13 @@ public class GameDesktopLauncher implements ApplicationListener {
 
     private InputHandler inputHandler;
 
+    private AnnotationConfigApplicationContext context;
+
     @Override
     public void create() {
         batch = new SpriteBatch();
+
+        initAppContext();
 
         TiledMapTileLayer groundLayer = loadLevelTiles();
 
@@ -62,6 +60,14 @@ public class GameDesktopLauncher implements ApplicationListener {
         loadInputHandler();
 
         loadAIInputHandler();
+    }
+
+    private void initAppContext() {
+        AnnotationConfigApplicationContext contextTmp = new AnnotationConfigApplicationContext();
+        contextTmp.getEnvironment().setActiveProfiles(LOADER_PROFILE);
+        contextTmp.register(AppConfig.class);
+        contextTmp.refresh();
+        context = contextTmp;
     }
 
     @Override
@@ -99,22 +105,12 @@ public class GameDesktopLauncher implements ApplicationListener {
     }
 
     private void loadInputHandler() {
-        InputProvider inputProvider = new GdxInputProvider();
-        Map<Integer, Action> actions = Map.of(
-                com.badlogic.gdx.Input.Keys.W, new MoveUp(),
-                com.badlogic.gdx.Input.Keys.S, new MoveDown(),
-                com.badlogic.gdx.Input.Keys.A, new MoveLeft(),
-                com.badlogic.gdx.Input.Keys.D, new MoveRight(),
-                com.badlogic.gdx.Input.Keys.L, new ActivateHealth(),
-                com.badlogic.gdx.Input.Keys.SPACE, new Shoot(entityModels)
-        );
-
-        inputHandler = new InputHandlerImpl(inputProvider, actions);
+        inputHandler = context.getBean("inputHandler", InputHandler.class);
     }
 
     private void loadAIInputHandler() {
         for (int i = 0; i < aiTanks.size(); i++) {
-            aiHandlers.add(new AIInputHandlerImpl());
+            aiHandlers.add(context.getBean(AIInputHandlerImpl.class));
         }
     }
 
@@ -122,9 +118,9 @@ public class GameDesktopLauncher implements ApplicationListener {
         TankView tankView = new TankView("images/tank_blue.png");
         TreeView treeView = new TreeView("images/greenTree.png");
 
-        LevelLoader loader = getLoader(groundLayer, tankView, treeView);
+        LevelLoader loader = context.getBean(LevelLoader.class);
 
-        LevelEntitiesData levelEntitiesData = loader.loadLevel();
+        LevelEntitiesData levelEntitiesData = loader.loadLevel(groundLayer, tankView, treeView);
 
         tankModel = levelEntitiesData.getTank();
         aiTanks = levelEntitiesData.getAiTanks();
@@ -137,30 +133,6 @@ public class GameDesktopLauncher implements ApplicationListener {
         level = new TmxMapLoader().load("level.tmx");
         levelRenderer = createSingleLayerMapRenderer(level, batch);
         return getSingleLayer(level);
-    }
-
-    private LevelLoader getLoader(TiledMapTileLayer groundLayer, TankView tankView, TreeView treeView) {
-        LevelLoader loader;
-
-        if (RANDOM_LOADER_ENABLE) {
-            loader = new RandomLevelLoader(
-                    10, 8, 10,
-                    AI_TANK_COUNT,
-                    MOVEMENT_SPEED,
-                    groundLayer,
-                    tankView,
-                    treeView
-            );
-        } else {
-            loader = new FileLevelLoader(
-                    Path.of("src/main/resources/levels/test_level"),
-                    MOVEMENT_SPEED,
-                    groundLayer,
-                    tankView,
-                    treeView
-            );
-        }
-        return loader;
     }
 
     private void handleInputAndRenderIt(float deltaTime) {
