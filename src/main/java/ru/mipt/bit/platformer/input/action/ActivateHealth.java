@@ -1,5 +1,6 @@
 package ru.mipt.bit.platformer.input.action;
 
+import org.springframework.stereotype.Component;
 import ru.mipt.bit.platformer.input.Action;
 import ru.mipt.bit.platformer.model.EntityModel;
 import ru.mipt.bit.platformer.model.TankModel;
@@ -8,6 +9,7 @@ import ru.mipt.bit.platformer.view.decorator.HealthDecorator;
 
 import java.util.List;
 
+@Component
 public class ActivateHealth implements Action {
     private boolean enabled = false;
 

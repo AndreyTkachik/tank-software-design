@@ -1,5 +1,6 @@
 package ru.mipt.bit.platformer.input.action;
 
+import org.springframework.stereotype.Component;
 import ru.mipt.bit.platformer.enums.MovementDirection;
 import ru.mipt.bit.platformer.input.Action;
 import ru.mipt.bit.platformer.model.EntityModel;
@@ -8,9 +9,16 @@ import ru.mipt.bit.platformer.model.TankModel;
 import java.util.List;
 import java.util.Random;
 
+@Component
 public class MoveAIRandom implements Action {
 
     private final Random random = new Random();
+
+    private final Shoot shootAction;
+
+    public MoveAIRandom(Shoot shootAction) {
+        this.shootAction = shootAction;
+    }
 
     @Override
     public void execute(TankModel tank, List<EntityModel> entities) {
@@ -19,7 +27,7 @@ public class MoveAIRandom implements Action {
         if (choice < directions.length) {
             tank.move(directions[choice], entities);
         } else {
-            new Shoot(entities).execute(tank, entities);
+            shootAction.execute(tank, entities);
         }
 
     }
